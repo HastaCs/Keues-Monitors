@@ -275,12 +275,8 @@ fn tts_speak(
     rate: Option<f64>,
 ) -> Result<Value, String> {
     let voices = list_voices_impl(&app)?;
-    let voice_id = voice_id.unwrap_or_else(|| {
-        voices
-            .first()
-            .map(|v| v.id.clone())
-            .unwrap_or_default()
-    });
+    let voice_id =
+        voice_id.unwrap_or_else(|| voices.first().map(|v| v.id.clone()).unwrap_or_default());
 
     if voice_id.is_empty() {
         return Err("No TTS voice available".to_string());
@@ -326,6 +322,13 @@ fn tts_speak(
 
     let mut cmd = Command::new(&piper);
     cmd.args(&args);
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
     cmd.stdin(Stdio::piped());
     cmd.stdout(Stdio::null());
     cmd.stderr(Stdio::null());
@@ -344,7 +347,9 @@ fn tts_speak(
             .stdin
             .take()
             .ok_or_else(|| "could not open TTS stdin".to_string())?;
-        stdin.write_all(text.as_bytes()).map_err(|e| e.to_string())?;
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|e| e.to_string())?;
     }
 
     *state.killed.lock().unwrap() = false;

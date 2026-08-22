@@ -67,10 +67,7 @@ async fn handler(
         None => return (StatusCode::BAD_GATEWAY, "no target configured").into_response(),
     };
 
-    let path_and_query = uri
-        .path_and_query()
-        .map(|pq| pq.as_str())
-        .unwrap_or("/");
+    let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
 
     if let Some(ws) = ws {
         let ws_url = format!("{}{}", to_ws_scheme(&target), path_and_query);
@@ -174,11 +171,7 @@ async fn forward_http(
     let resp = match builder.body(body).send().await {
         Ok(r) => r,
         Err(e) => {
-            return (
-                StatusCode::BAD_GATEWAY,
-                format!("proxy error: {e}"),
-            )
-                .into_response();
+            return (StatusCode::BAD_GATEWAY, format!("proxy error: {e}")).into_response();
         }
     };
 
