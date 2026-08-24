@@ -9,6 +9,13 @@ let audioCtx: AudioContext | null = null;
 let pendingSource: AudioBufferSourceNode | null = null;
 
 
+function getCtx(): AudioContext {
+    const ctx = audioCtx ?? new AudioContext();
+    audioCtx = ctx;
+    return ctx;
+}
+
+
 export async function ttsListVoices(): Promise<TTSVoice[]> {
     if (!isTauri()) return [];
 
@@ -22,8 +29,11 @@ export async function ttsListVoices(): Promise<TTSVoice[]> {
 }
 
 
-export async function ttsSpeak(text: string, voiceId?: string): Promise<boolean> {
-    if (!isTauri()) return false;
+// Sintetiza el texto con piper y devuelve el buffer decodificado sin reproducirlo,
+// para poder lanzar la síntesis en paralelo con el beep y reproducir la voz
+// justo cuando el beep termina.
+export async function ttsSynthesize(text: string, voiceId?: string): Promise<AudioBuffer | null> {
+    if (!isTauri()) return null;
 
     let result: { success: boolean; wav?: number[] };
 
@@ -31,32 +41,47 @@ export async function ttsSpeak(text: string, voiceId?: string): Promise<boolean>
         result = await invoke<{ success: boolean; wav?: number[] }>("tts_speak", { text, voiceId, rate: 1 });
     }
     catch {
-        return false;
+        return null;
     }
 
-    if (!result.success || !result.wav) return false;
+    if (!result.success || !result.wav) return null;
 
     const wav = new Uint8Array(result.wav);
     const arrayBuffer = new ArrayBuffer(wav.byteLength);
     new Uint8Array(arrayBuffer).set(wav);
 
-    const ctx = audioCtx ?? new AudioContext();
-    audioCtx = ctx;
+    try {
+        return await getCtx().decodeAudioData(arrayBuffer);
+    }
+    catch {
+        return null;
+    }
+}
 
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+export function ttsPlayBuffer(buffer: AudioBuffer): void {
+    const ctx = getCtx();
 
     pendingSource?.stop();
 
     const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
+    source.buffer = buffer;
     source.connect(ctx.destination);
     source.onended = () => {
-        pendingSource = null;
+        if (pendingSource === source)
+            pendingSource = null;
     };
 
     pendingSource = source;
     source.start();
+}
 
+
+export async function ttsSpeak(text: string, voiceId?: string): Promise<boolean> {
+    const buffer = await ttsSynthesize(text, voiceId);
+    if (!buffer) return false;
+
+    ttsPlayBuffer(buffer);
     return true;
 }
 

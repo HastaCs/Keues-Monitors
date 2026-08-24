@@ -26,6 +26,7 @@ export interface MonitorTheme {
     voiceEnabled?: boolean;
     voiceId?: string;
     voicePrefix?: string;
+    beepEnabled?: boolean;
 }
 
 

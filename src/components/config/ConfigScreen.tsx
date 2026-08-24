@@ -19,7 +19,7 @@ import {
     TextInput,
     Title,
 } from "@mantine/core";
-import { IconBorderOuter, IconCheck, IconDeviceTv, IconDoorEnter, IconEye, IconHistory, IconLayout, IconPalette, IconPhoto, IconPhotoOff, IconPlayerPlay, IconPlugConnected, IconRefresh, IconServer, IconSpeakerphone, IconTypography, IconVolume } from "@tabler/icons-react";
+import { IconBellRinging, IconBorderOuter, IconCheck, IconDeviceTv, IconDoorEnter, IconEye, IconHistory, IconLayout, IconPalette, IconPhoto, IconPhotoOff, IconPlayerPlay, IconPlugConnected, IconRefresh, IconServer, IconSpeakerphone, IconTypography, IconVolume } from "@tabler/icons-react";
 
 import Brand from "../Brand";
 import VersionBadge from "../VersionBadge";
@@ -29,6 +29,7 @@ import ThemePreviewModal from "./ThemePreviewModal";
 import { COLOR_SWATCHES, getPresetsForFlow } from "./themePresets";
 import { getLocations, getFlows } from "../../api/keuesApi";
 import { ttsListVoices, ttsSpeak } from "../../api/ttsService";
+import { playBeep } from "../../api/soundService";
 import { isTauri, saveConfiguration } from "../../api/appBridge";
 import { configureTarget } from "../../api/net";
 
@@ -592,6 +593,32 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                             value={resolvedTheme.borderWidth}
                                             onChange={v => updateTheme({ borderWidth: typeof v === "number" ? v : 0 })}
                                         />
+                                    </Group>
+                                </Accordion.Panel>
+                            </Accordion.Item>
+
+                            <Accordion.Item value="sound">
+                                <Accordion.Control icon={<IconBellRinging size={18} />}>
+                                    Alert sound
+                                </Accordion.Control>
+                                <Accordion.Panel>
+                                    <Group grow align="flex-end">
+                                        <Checkbox
+                                            label="Play beep on new ticket"
+                                            description="Short beep when a ticket is called (before the voice, if enabled)"
+                                            checked={resolvedTheme.beepEnabled ?? false}
+                                            onChange={e => updateTheme({ beepEnabled: e.currentTarget.checked })}
+                                        />
+                                        <Button
+                                            size="compact-sm"
+                                            variant="light"
+                                            leftSection={<IconPlayerPlay size={14} />}
+                                            onClick={() => void playBeep()}
+                                            disabled={!(resolvedTheme.beepEnabled ?? false)}
+                                            w="fit-content"
+                                        >
+                                            Preview
+                                        </Button>
                                     </Group>
                                 </Accordion.Panel>
                             </Accordion.Item>

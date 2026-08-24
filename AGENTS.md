@@ -67,6 +67,7 @@ src/
     keuesApi.ts       # getLocations, getFlows, getFlow, getCounters, getTickets, getFlowQueueIds
     signalRService.ts # connect/disconnect, subscribeStatus, onTicketCalled/Attended/CounterFree/ManualCall
     ttsService.ts     # ttsListVoices/ttsSpeak/ttsStop vía invoke + Web Audio
+    soundService.ts   # playBeep (beep de turno desde public/sounds/beep.wav + Web Audio)
 
   constants/app.ts     # APP_VERSION desde package.json
 
@@ -159,6 +160,7 @@ El servicio expone `connect(config)` / `disconnect()`, `subscribeStatus(listener
 - Binarios: Windows → `piper-win/piper.exe`, Linux → `piper-linux/piper`. En Linux se fija `LD_LIBRARY_PATH` a `piper-linux`.
 - Voces: modelos `models/*.onnx` con prefijo `es_`/`en_`; los hablantes salen del `speaker_id_map` del `.json` del modelo (si está vacío, una voz por modelo).
 - El default `voiceId` del tema es el nombre de modelo (`es_ES-sharvard-medium.onnx`); ConfigScreen lo resuelve al primer hablante de ese modelo.
+- **Beep de aviso**: `soundService.playBeep()` reproduce `public/sounds/beep.wav` si `theme.beepEnabled` está activo (Appearance → Alert sound, por flowType, desactivado por defecto). Si hay beep y voz, la síntesis TTS se lanza en paralelo con el beep pero el audio espera a que este termine: orden garantizado beep → voz sin hueco extra.
 
 ## Diseño visual de los paneles
 

@@ -17,7 +17,8 @@ import {
 } from "../../api/signalRService";
 
 import { getCounters, getTickets } from "../../api/keuesApi";
-import { ttsSpeak } from "../../api/ttsService";
+import { ttsSynthesize, ttsPlayBuffer } from "../../api/ttsService";
+import { playBeep } from "../../api/soundService";
 import { configureTarget } from "../../api/net";
 
 import { resolveTheme } from "../../types/theme";
@@ -101,17 +102,37 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
     }, [freeCurrent, freeSeq]);
 
 
+    // Beep opcional de aviso de turno (configurable por flowType en Appearance)
+    const maybeBeep = useCallback(() => {
+        const theme = resolveTheme(flowType, config.theme?.[flowType]);
+        if (!theme.beepEnabled) return;
+        void playBeep();
+    }, [config, flowType]);
+
+
     // Anunciar por voz solo cuando la caja aparece en pantalla (no al recibir el evento,
-    // que puede quedar en cola hasta DISPLAY_MS).
+    // que puede quedar en cola hasta DISPLAY_MS). La síntesis se lanza en paralelo con el
+    // beep, pero el audio espera a que este termine: orden garantizado beep → voz sin hueco.
     const announceFree = useCallback((code: string) => {
         const theme = resolveTheme(flowType, config.theme?.[flowType]);
-        if (!theme.voiceEnabled) return;
 
         const counter = countersByCodeRef.current.get(code);
         const target = counter?.code || code;
         const prefix = theme.voicePrefix?.trim();
 
-        void ttsSpeak(prefix ? `${prefix} ${target}` : target, theme.voiceId);
+        const speech = theme.voiceEnabled
+            ? ttsSynthesize(prefix ? `${prefix} ${target}` : target, theme.voiceId)
+            : null;
+
+        void (async () => {
+            if (theme.beepEnabled)
+                await playBeep();
+
+            if (!speech) return;
+            const buffer = await speech;
+            if (buffer)
+                ttsPlayBuffer(buffer);
+        })();
     }, [config, flowType]);
 
     useEffect(() => {
@@ -127,15 +148,19 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
 
         const unsubTicket = onTicketCalled((e: TicketCalledEvent) => {
             if (flowType === 2) {
+                maybeBeep();
                 setManualCode(e.ticketCode);
                 setManualCounterCode(e.counterCode ?? null);
                 return;
             }
 
             if (flowType === 1) {
+                // El beep suena al mostrarse el puesto (announceFree), justo antes de la voz
                 addFreeEvent(e.counterCode ?? e.ticketCode);
                 return;
             }
+
+            maybeBeep();
 
             const entry: CalledTicket = {
                 ticketId: e.ticketId ?? "",
@@ -219,7 +244,7 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
             unsubManual();
             void disconnect();
         };
-    }, [config, flowType]);
+    }, [config, flowType, maybeBeep]);
 
 
     useEffect(() => {
