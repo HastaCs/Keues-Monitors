@@ -730,6 +730,25 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                                         onChange={v => updateTheme({ historyHeaderColor: v })}
                                                     />
                                                 </Group>
+
+                                                <Group grow align="flex-end">
+                                                    <ColorInput
+                                                        label="History border color"
+                                                        description="Borders of the cards, panel and header in the recent calls panel"
+                                                        swatches={COLOR_SWATCHES}
+                                                        value={resolvedTheme.historyBorderColor ?? resolvedTheme.secondaryTextColor}
+                                                        onChange={v => updateTheme({ historyBorderColor: v })}
+                                                    />
+                                                    <NumberInput
+                                                        label="History border width"
+                                                        description="Width in pixels"
+                                                        min={0}
+                                                        max={40}
+                                                        step={1}
+                                                        value={resolvedTheme.historyBorderWidth ?? 1}
+                                                        onChange={v => updateTheme({ historyBorderWidth: typeof v === "number" ? v : 1 })}
+                                                    />
+                                                </Group>
                                             </Stack>
                                         </fieldset>
                                     </Stack>

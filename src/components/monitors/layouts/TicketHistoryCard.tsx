@@ -2,7 +2,7 @@ import { Box, Text } from "@mantine/core";
 
 import type { CalledTicket } from "../MonitorPanel";
 import type { MonitorTheme } from "../../../types/theme";
-import { subtleBorder } from "./shared";
+import { historyCardBorder } from "./shared";
 
 
 interface Props {
@@ -25,7 +25,7 @@ export default function TicketHistoryCard({ ticket, theme, opacity = 1 }: Props)
                 padding: "clamp(0.5rem, min(1.2vw, 1.6vh), 1.5rem)",
                 borderRadius: "clamp(0.75rem, 1.5vw, 2rem)",
                 background: theme.historyCardBackground,
-                border: `1px solid ${subtleBorder(theme)}`,
+                border: historyCardBorder(theme),
                 opacity,
             }}
         >

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Box, ScrollArea, Text } from "@mantine/core";
 
 import type { MonitorTheme } from "../../types/theme";
+import { historyCardBorder } from "./layouts/shared";
 
 
 interface Props {
@@ -22,8 +23,23 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
     const [animate, setAnimate] = useState(false);
     const [glow, setGlow] = useState(false);
     const [history, setHistory] = useState<HistoryEntry[]>([]);
+    const [area, setArea] = useState({ w: 0, h: 0 });
     const prevRef = useRef<{ code: string; counterCode: string | null } | null>(null);
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const areaRef = useRef<HTMLDivElement | null>(null);
+
+
+    useEffect(() => {
+        const el = areaRef.current;
+        if (!el) return;
+
+        const measure = () => setArea({ w: el.clientWidth, h: el.clientHeight });
+        measure();
+
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
 
     useEffect(() => {
@@ -70,13 +86,46 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
     }, [code, counterCode]);
 
 
-    const glowShadow = glow
-        ? `0 0 0 4px ${theme.borderColor}, 0 8px 64px color-mix(in srgb, ${theme.borderColor} 18%, transparent), 0 0 100px color-mix(in srgb, ${theme.borderColor} 8%, transparent)`
+    const glowShadow = glow && theme.borderWidth > 0
+        ? `0 0 0 ${theme.borderWidth}px ${theme.borderColor}, 0 8px 64px color-mix(in srgb, ${theme.borderColor} 18%, transparent), 0 0 100px color-mix(in srgb, ${theme.borderColor} 8%, transparent)`
         : "0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)";
 
-    const subtleBorder = `color-mix(in srgb, ${theme.secondaryTextColor} 20%, transparent)`;
+    const subtleBorder = `color-mix(in srgb, ${theme.historyBorderColor ?? theme.secondaryTextColor} 20%, transparent)`;
     const historyCardBackground = theme.historyCardBackground;
     const mutedText = `color-mix(in srgb, ${theme.secondaryTextColor} 50%, transparent)`;
+
+
+    // El número (counterCode-code) crece con el tamaño del monitor (TVs) pero
+    // se ajusta a la longitud del código y al área disponible para caber
+    // dentro de su card sin desbordar.
+    function mainFontSize(): number {
+        const chars = Math.max((counterCode?.length ?? 0) + (code?.length ?? 0), 1);
+        const hasCounter = Boolean(counterCode);
+
+        const byViewport = Math.min(window.innerWidth * 0.22, window.innerHeight * 0.32);
+
+        let byArea = Number.POSITIVE_INFINITY;
+        if (area.w > 0 && area.h > 0) {
+            const counterShare = hasCounter ? 0.30 : 0;
+            const budgetH = Math.max(0, area.h * 0.86 - (hasCounter ? area.h * 0.02 : 0));
+            const byHeight = budgetH / (1 + counterShare);
+            const byWidth = (area.w * 0.86) / (chars * 0.62);
+            byArea = Math.min(byHeight, byWidth);
+        }
+
+        return Math.max(24, Math.min(byViewport, byArea));
+    }
+
+    function historyFontSize(historyCode: string): string {
+        const chars = Math.max(historyCode.length, 1);
+        const byViewport = Math.min(window.innerWidth * 0.06, window.innerHeight * 0.09);
+        const byChars = (window.innerWidth * 0.26) / (chars * 0.62);
+        const px = Math.max(20, Math.min(byViewport, byChars));
+        return `clamp(1.4rem, ${px}px, 7rem)`;
+    }
+
+    const numPx = mainFontSize();
+    const counterPx = Math.max(14, numPx * 0.30);
 
 
     return (
@@ -92,7 +141,7 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
                 overflow: "hidden",
             }}
         >
-            <Box style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Box ref={areaRef} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {code !== null ? (
                     <Box
                         style={{
@@ -118,7 +167,7 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
                                     tt="uppercase"
                                     c={theme.secondaryTextColor}
                                     mb={8}
-                                    style={{ fontSize: "clamp(3rem, min(8vw, 12vh), 12rem)", letterSpacing: "0.15em" }}
+                                    style={{ fontSize: `${counterPx}px`, letterSpacing: "0.15em" }}
                                 >
                                     {counterCode}
                                 </Text>
@@ -127,7 +176,7 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
                             <Text
                                 fw={900}
                                 c={theme.textColor}
-                                style={{ fontSize: "clamp(7rem, min(34vw, 52vh), 60rem)", lineHeight: 1, letterSpacing: "-0.02em" }}
+                                style={{ fontSize: `${numPx}px`, lineHeight: 1, letterSpacing: "-0.02em" }}
                             >
                                 {code}
                             </Text>
@@ -187,7 +236,7 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
                                         padding: "clamp(0.75rem, 1.5vw, 2rem)",
                                         borderRadius: "clamp(0.75rem, 1.2vw, 1.75rem)",
                                         background: historyCardBackground,
-                                        border: `1px solid ${subtleBorder}`,
+                                        border: historyCardBorder(theme),
                                         textAlign: "center",
                                     }}
                                 >
@@ -203,7 +252,7 @@ export default function ManualCallMonitorPanel({ code, counterCode, theme }: Pro
                                     <Text
                                         fw={900}
                                         c={theme.historyTextColor}
-                                        style={{ fontSize: "clamp(2.5rem, 6vw, 7rem)", lineHeight: 1 }}
+                                        style={{ fontSize: historyFontSize(t.code), lineHeight: 1, overflowWrap: "anywhere" }}
                                     >
                                         {t.code}
                                     </Text>

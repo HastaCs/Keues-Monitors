@@ -57,8 +57,8 @@ export default function TicketCallout({ ticket, theme }: Props) {
     }, [ticket]);
 
 
-    const glowShadow = glow
-        ? `0 0 0 4px ${theme.borderColor}, 0 8px 64px color-mix(in srgb, ${theme.borderColor} 18%, transparent), 0 0 100px color-mix(in srgb, ${theme.borderColor} 8%, transparent)`
+    const glowShadow = glow && theme.borderWidth > 0
+        ? `0 0 0 ${theme.borderWidth}px ${theme.borderColor}, 0 8px 64px color-mix(in srgb, ${theme.borderColor} 18%, transparent), 0 0 100px color-mix(in srgb, ${theme.borderColor} 8%, transparent)`
         : "0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)";
 
 

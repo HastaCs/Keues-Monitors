@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Box, ScrollArea, Text } from "@mantine/core";
 
 import type { MonitorTheme } from "../../types/theme";
+import { historyCardBorder } from "./layouts/shared";
 
 
 interface Props {
@@ -69,7 +70,7 @@ export default function SetFreeMonitorPanel({ freeCounter, freeHistory, theme }:
     }
 
 
-    const subtleBorder = `color-mix(in srgb, ${theme.secondaryTextColor} 20%, transparent)`;
+    const subtleBorder = `color-mix(in srgb, ${theme.historyBorderColor ?? theme.secondaryTextColor} 20%, transparent)`;
     const historyCardBackground = theme.historyCardBackground;
 
 
@@ -179,7 +180,7 @@ export default function SetFreeMonitorPanel({ freeCounter, freeHistory, theme }:
                                             padding: "clamp(0.75rem, 1.5vw, 2rem)",
                                             borderRadius: "clamp(0.75rem, 1.2vw, 1.75rem)",
                                             background: historyCardBackground,
-                                            border: `1px solid ${subtleBorder}`,
+                                            border: historyCardBorder(theme),
                                             textAlign: "center",
                                         }}
                                     >

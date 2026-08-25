@@ -10,114 +10,72 @@ export interface ThemePreset {
 }
 
 
-// Acento de cada tipo de flujo: "light" para fondos claros, "bright" para fondos oscuros
-const FLOW_ACCENT: Record<number, { light: string; bright: string }> = {
-    0: { light: "#1a1a2e", bright: "#93c5fd" },
-    1: { light: "#1a6b3a", bright: "#34d399" },
-    2: { light: "#92400e", bright: "#fbbf24" },
-};
+// 4 paletas de color Mantine. "accent" para texto/números sobre fondos claros,
+// "bright" para fondos oscuros y "tint" como fondo suave del preset.
+interface ColorPalette {
+    id: string;
+    label: string;
+    accent: string;
+    bright: string;
+    tint: string;
+}
+
+export const COLOR_PRESETS: ColorPalette[] = [
+    { id: "blue", label: "Blue", accent: "#1864ab", bright: "#74c0fc", tint: "#e7f5ff" },   // blue.9 / blue.3 / blue.0
+    { id: "green", label: "Green", accent: "#2f9e44", bright: "#8ce99a", tint: "#ebfbee" }, // green.8 / green.3 / green.0
+    { id: "mono", label: "Black & White", accent: "#212529", bright: "#f8f9fa", tint: "#f1f3f5" }, // gray.9 / gray.0 / gray.1
+    { id: "red", label: "Red", accent: "#c92a2a", bright: "#ffa8a8", tint: "#fff5f5" },     // red.9 / red.3 / red.0
+];
 
 
-// Swatches coherentes con la paleta del proyecto, usados en todos los ColorInput
+// Swatches coherentes con la paleta Mantine, usados en todos los ColorInput
 export const COLOR_SWATCHES = [
-    "#f8f9fa",
     "#ffffff",
-    "#111827",
-    "#1f2937",
-    "#1a1a2e",
-    "#1a6b3a",
-    "#92400e",
-    "#374151",
-    "#6b7280",
-    "#d1d5db",
+    "#f8f9fa",
+    "#f1f3f5",
+    "#ced4da",
+    "#adb5bd",
+    "#868e96",
+    "#495057",
+    "#343a40",
+    "#212529",
+    "#228be6",
+    "#1971c2",
+    "#1864ab",
+    "#40c057",
+    "#37b24d",
+    "#2f9e44",
+    "#fd7e14",
+    "#f76707",
+    "#e8590c",
+    "#fa5252",
+    "#e03131",
+    "#c92a2a",
 ];
 
 
 // Los presets solo tocan colores/fondo. Nunca pisan textos, layout, voz ni showHistory.
 export function getPresetsForFlow(flowType: number): ThemePreset[] {
     const defaults = DEFAULT_THEMES[flowType] ?? DEFAULT_THEMES[0];
-    const accent = FLOW_ACCENT[flowType] ?? FLOW_ACCENT[0];
 
-    return [
-        {
-            id: "default",
-            label: "Default",
-            preview: { background: defaults.background, card: defaults.cardBackground, accent: accent.light },
-            colors: {
-                background: defaults.background,
-                cardBackground: defaults.cardBackground,
-                textColor: defaults.textColor,
-                secondaryTextColor: defaults.secondaryTextColor,
-                labelTitleColor: defaults.labelTitleColor,
-                borderColor: defaults.borderColor,
-                borderWidth: defaults.borderWidth,
-                historyCardBackground: defaults.historyCardBackground,
-                historyPanelBackground: defaults.historyPanelBackground,
-                historyTextColor: defaults.historyTextColor,
-                historySecondaryTextColor: defaults.historySecondaryTextColor,
-                historyHeaderColor: defaults.historyHeaderColor,
-                clockTextColor: undefined,
-            },
+    return COLOR_PRESETS.map(palette => ({
+        id: palette.id,
+        label: palette.label,
+        preview: { background: palette.tint, card: "#ffffff", accent: palette.accent },
+        colors: {
+            background: palette.tint,
+            cardBackground: "#ffffff",
+            textColor: palette.accent,
+            secondaryTextColor: "#495057",
+            labelTitleColor: "#495057",
+            borderColor: palette.accent,
+            borderWidth: defaults.borderWidth,
+            historyCardBackground: "#ffffff",
+            historyPanelBackground: palette.tint,
+            historyTextColor: palette.accent,
+            historySecondaryTextColor: "#495057",
+            historyHeaderColor: "#495057",
+            clockTextColor: undefined,
         },
-        {
-            id: "dark",
-            label: "Dark",
-            preview: { background: "#111827", card: "#1f2937", accent: accent.bright },
-            colors: {
-                background: "#111827",
-                cardBackground: "#1f2937",
-                textColor: accent.bright,
-                secondaryTextColor: "#d1d5db",
-                labelTitleColor: "#e5e7eb",
-                borderColor: accent.bright,
-                borderWidth: defaults.borderWidth,
-                historyCardBackground: "#1f2937",
-                historyPanelBackground: "#0b1220",
-                historyTextColor: accent.bright,
-                historySecondaryTextColor: "#d1d5db",
-                historyHeaderColor: "#e5e7eb",
-                clockTextColor: "#e5e7eb",
-            },
-        },
-        {
-            id: "soft",
-            label: "Soft",
-            preview: { background: "#fdf6f0", card: "#ffffff", accent: accent.light },
-            colors: {
-                background: "#fdf6f0",
-                cardBackground: "#ffffff",
-                textColor: accent.light,
-                secondaryTextColor: "#6b7280",
-                labelTitleColor: "#6b7280",
-                borderColor: accent.light,
-                borderWidth: defaults.borderWidth,
-                historyCardBackground: "#ffffff",
-                historyPanelBackground: "#faf3ec",
-                historyTextColor: accent.light,
-                historySecondaryTextColor: "#6b7280",
-                historyHeaderColor: "#6b7280",
-                clockTextColor: undefined,
-            },
-        },
-        {
-            id: "contrast",
-            label: "Contrast",
-            preview: { background: "#ffffff", card: "#ffffff", accent: accent.light },
-            colors: {
-                background: "#ffffff",
-                cardBackground: "#ffffff",
-                textColor: accent.light,
-                secondaryTextColor: "#111827",
-                labelTitleColor: "#111827",
-                borderColor: accent.light,
-                borderWidth: 4,
-                historyCardBackground: "#ffffff",
-                historyPanelBackground: "#f8f9fa",
-                historyTextColor: accent.light,
-                historySecondaryTextColor: "#111827",
-                historyHeaderColor: "#111827",
-                clockTextColor: undefined,
-            },
-        },
-    ];
+    }));
 }

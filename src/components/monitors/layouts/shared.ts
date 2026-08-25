@@ -5,7 +5,15 @@ import type { MonitorTheme } from "../../../types/theme";
 
 
 export function subtleBorder(theme: MonitorTheme): string {
-    return `color-mix(in srgb, ${theme.secondaryTextColor} 20%, transparent)`;
+    const base = theme.historyBorderColor ?? theme.secondaryTextColor;
+    return `color-mix(in srgb, ${base} 20%, transparent)`;
+}
+
+
+export function historyCardBorder(theme: MonitorTheme): string {
+    const width = theme.historyBorderWidth ?? 1;
+    const base = theme.historyBorderColor ?? theme.secondaryTextColor;
+    return `${width}px solid color-mix(in srgb, ${base} 20%, transparent)`;
 }
 
 
