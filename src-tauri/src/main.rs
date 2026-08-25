@@ -47,22 +47,25 @@ fn read_existing(file: &Path) -> Result<Value, String> {
 }
 
 fn ensure_device_id(mut config: Value) -> (Value, bool) {
-    let mut changed = false;
-    if let Some(obj) = config.as_object_mut() {
-        let has_valid = obj
-            .get("deviceId")
-            .and_then(|v| v.as_str())
-            .map(|s| uuid::Uuid::parse_str(s).is_ok())
-            .unwrap_or(false);
-        if !has_valid {
-            obj.insert(
-                "deviceId".into(),
-                Value::String(uuid::Uuid::new_v4().to_string()),
-            );
-            changed = true;
+    let has_valid = config
+        .get("deviceId")
+        .and_then(|v| v.as_str())
+        .map(|s| uuid::Uuid::parse_str(s).is_ok())
+        .unwrap_or(false);
+    if has_valid {
+        return (config, false);
+    }
+
+    let id = Value::String(uuid::Uuid::new_v4().to_string());
+    match config.as_object_mut() {
+        Some(obj) => {
+            obj.insert("deviceId".into(), id.clone());
+        }
+        None => {
+            config = json!({ "deviceId": id });
         }
     }
-    (config, changed)
+    (config, true)
 }
 
 fn merge_json(mut base: Value, incoming: Value) -> Value {
@@ -76,9 +79,8 @@ fn merge_json(mut base: Value, incoming: Value) -> Value {
     }
 }
 
-#[tauri::command]
-fn load_config(app: tauri::AppHandle) -> Result<Value, String> {
-    let dir = config_dir(&app)?;
+fn load_or_init_config(app: &tauri::AppHandle) -> Result<Value, String> {
+    let dir = config_dir(app)?;
     let file = dir.join("config.json");
 
     let mut config = read_existing(&file)?;
@@ -94,6 +96,12 @@ fn load_config(app: tauri::AppHandle) -> Result<Value, String> {
         write_config(&file, &config)?;
     }
 
+    Ok(config)
+}
+
+#[tauri::command]
+fn load_config(app: tauri::AppHandle) -> Result<Value, String> {
+    let config = load_or_init_config(&app)?;
     Ok(json!({ "success": true, "config": config }))
 }
 
@@ -110,6 +118,7 @@ fn save_config(app: tauri::AppHandle, config: Value) -> Result<Value, String> {
     if let Some(obj) = saved.as_object_mut() {
         obj.insert("deviceId".into(), device_id);
     }
+    let (saved, _) = ensure_device_id(saved);
 
     write_config(&file, &saved)?;
 
@@ -389,6 +398,10 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            if let Err(e) = load_or_init_config(app.handle()) {
+                eprintln!("failed to initialize config: {e}");
+            }
+
             let proxy_state = Arc::new(proxy::ProxyState::default());
             tauri::async_runtime::block_on(proxy::start(proxy_state.clone()))?;
             app.manage(proxy_state);
