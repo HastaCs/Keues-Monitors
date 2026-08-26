@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.1.0...v1.2.0) (2026-08-26)
+
+
+### 🚀 Features
+
+* Enhance publish workflow with OS matrix support and Linux dependencies ([f5f7362](https://github.com/HastaCs/Keues-Monitors/commit/f5f73622f2b46af39e56610d4697240efc9d37cb))
+
+
+### 🐛 Bug Fixes
+
+* Improve download progress calculation in update process ([5d38e2a](https://github.com/HastaCs/Keues-Monitors/commit/5d38e2a361d670e5152cdc88d36b5254484dcf47))
+
 ## [1.1.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.0.2...v1.1.0) (2026-08-25)
 
 
