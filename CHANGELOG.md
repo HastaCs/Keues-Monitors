@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.2.0...v1.3.0) (2026-08-26)
+
+
+### 🚀 Features
+
+* Add caching mechanism for TTS audio files and integrate sha2 for cache key generation ([b83ae47](https://github.com/HastaCs/Keues-Monitors/commit/b83ae47eedb5dda69a4ec6171a939e34d46e88c1))
+* Add TicketCancelled event handling to signalRService and MonitorPanel ([c98e21e](https://github.com/HastaCs/Keues-Monitors/commit/c98e21e585e45559507859ec8cb4270e05a0266c))
+
 ## [1.2.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.1.0...v1.2.0) (2026-08-26)
 
 
