@@ -8,6 +8,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tauri::Manager;
 
 fn config_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -163,6 +164,7 @@ fn set_proxy_target(
 pub struct TtsState {
     pub process: Mutex<Option<Child>>,
     pub killed: Mutex<bool>,
+    pub cache_size: Mutex<u64>,
 }
 
 fn tts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -174,6 +176,100 @@ fn tts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
             .map(|d| d.join("tts"))
             .map_err(|e| e.to_string())
     }
+}
+
+const TTS_CACHE_MAX_BYTES: u64 = 50 * 1024 * 1024; // 50 MB
+
+fn tts_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_cache_dir()
+        .map(|d| d.join("tts_cache"))
+        .map_err(|e| e.to_string())
+}
+
+fn cache_key(text: &str, voice_id: &str, rate: f64) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(text.as_bytes());
+    hasher.update(b"|");
+    hasher.update(voice_id.as_bytes());
+    hasher.update(b"|");
+    hasher.update(rate.to_string().as_bytes());
+    let hash = hasher.finalize();
+    let slice = &hash[..8];
+    let mut hex = String::with_capacity(16);
+    for byte in slice {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+    hex
+}
+
+fn get_cached_wav(path: &Path) -> Option<Vec<u8>> {
+    if path.exists() {
+        fs::read(path).ok()
+    } else {
+        None
+    }
+}
+
+fn evict_if_needed(cache_dir: &Path, new_entry_size: u64) {
+    let _ = fs::create_dir_all(cache_dir);
+
+    let total = cache_size_on_disk(cache_dir);
+    if total + new_entry_size <= TTS_CACHE_MAX_BYTES {
+        return;
+    }
+
+    let mut entries: Vec<(PathBuf, u64, std::time::SystemTime)> = fs::read_dir(cache_dir)
+        .into_iter()
+        .flatten()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
+        .filter_map(|e| {
+            let meta = e.metadata().ok()?;
+            let mtime = meta.modified().ok()?;
+            Some((e.path(), meta.len(), mtime))
+        })
+        .collect();
+
+    entries.sort_by_key(|a| a.2);
+
+    let mut freed = 0u64;
+    for (path, size, _) in &entries {
+        if total + new_entry_size - freed <= TTS_CACHE_MAX_BYTES {
+            break;
+        }
+        let _ = fs::remove_file(path);
+        freed += size;
+    }
+}
+
+fn cache_size_on_disk(cache_dir: &Path) -> u64 {
+    fs::read_dir(cache_dir)
+        .into_iter()
+        .flatten()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
+        .filter_map(|e| e.metadata().ok())
+        .map(|m| m.len())
+        .sum()
+}
+
+fn clear_tts_cache(app: &tauri::AppHandle) -> Result<u64, String> {
+    let dir = tts_cache_dir(app)?;
+    if !dir.exists() {
+        return Ok(0);
+    }
+
+    let count = fs::read_dir(&dir)
+        .map_err(|e| e.to_string())?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
+        .count();
+
+    fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    Ok(count as u64)
 }
 
 #[derive(serde::Serialize)]
@@ -291,12 +387,23 @@ fn tts_speak(
         return Err("No TTS voice available".to_string());
     }
 
+    let rate = rate.unwrap_or(1.0);
+
+    // --- cache check ---
+    let key = cache_key(&text, &voice_id, rate);
+    let cache_dir = tts_cache_dir(&app)?;
+    let cache_path = cache_dir.join(format!("{key}.wav"));
+
+    if let Some(wav) = get_cached_wav(&cache_path) {
+        return Ok(json!({ "success": true, "wav": wav }));
+    }
+
+    // --- cache miss: synthesize with piper ---
     let (model_id, speaker) = match voice_id.split_once('|') {
         Some((model, speaker)) => (model.to_string(), Some(speaker.to_string())),
         None => (voice_id, None),
     };
 
-    let rate = rate.unwrap_or(1.0);
     let length_scale = 1.0 / rate.clamp(0.5, 2.0);
 
     let dir = tts_dir(&app)?;
@@ -380,6 +487,17 @@ fn tts_speak(
 
     let wav = fs::read(&out_file).unwrap_or_default();
 
+    // --- save to cache ---
+    if !wav.is_empty() {
+        evict_if_needed(&cache_dir, wav.len() as u64);
+        if let Some(parent) = cache_path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        if fs::write(&cache_path, &wav).is_ok() {
+            *state.cache_size.lock().unwrap() += wav.len() as u64;
+        }
+    }
+
     Ok(json!({ "success": true, "wav": wav }))
 }
 
@@ -392,6 +510,16 @@ fn tts_stop(state: tauri::State<'_, Arc<TtsState>>) -> Result<Value, String> {
     }
 
     Ok(json!({ "success": true }))
+}
+
+#[tauri::command]
+fn tts_clear_cache(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<TtsState>>,
+) -> Result<Value, String> {
+    let count = clear_tts_cache(&app)?;
+    *state.cache_size.lock().unwrap() = 0;
+    Ok(json!({ "success": true, "cleared": count }))
 }
 
 fn main() {
@@ -409,6 +537,7 @@ fn main() {
             app.manage(Arc::new(TtsState {
                 process: Mutex::new(None),
                 killed: Mutex::new(false),
+                cache_size: Mutex::new(0),
             }));
 
             Ok(())
@@ -420,7 +549,8 @@ fn main() {
             set_proxy_target,
             tts_list_voices,
             tts_speak,
-            tts_stop
+            tts_stop,
+            tts_clear_cache
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
