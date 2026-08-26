@@ -33,6 +33,10 @@ export interface TicketAttendedEvent {
     ticketId: string;
 }
 
+// Evento: turno cancelado. El backend lo envía como string (el ticketId) o como
+// objeto { ticketId }. Indica que un ticket fue cancelado y debe desaparecer del monitor.
+export type TicketCancelledEvent = string | { ticketId: string };
+
 // Evento: puesto libre (flowType 1 — SetFree)
 // Payload confirmado: { counterId, counterCode }
 export interface CounterFreeEvent {
@@ -51,6 +55,7 @@ export interface ManualCallEvent {
 type StatusListener = (status: ConnectionStatus) => void;
 type TicketCalledListener = (event: TicketCalledEvent) => void;
 type TicketAttendedListener = (event: TicketAttendedEvent) => void;
+type TicketCancelledListener = (event: TicketCancelledEvent) => void;
 type CounterFreeListener = (event: CounterFreeEvent) => void;
 type ManualCallListener = (event: ManualCallEvent) => void;
 
@@ -59,6 +64,7 @@ let connection: HubConnection | null = null;
 let statusListener: StatusListener | null = null;
 let ticketCalledListener: TicketCalledListener | null = null;
 let ticketAttendedListener: TicketAttendedListener | null = null;
+let ticketCancelledListener: TicketCancelledListener | null = null;
 let counterFreeListener: CounterFreeListener | null = null;
 let manualCallListener: ManualCallListener | null = null;
 let connectSeq = 0;
@@ -93,6 +99,15 @@ export function onTicketAttended(listener: TicketAttendedListener): () => void {
     return () => {
         if (ticketAttendedListener === listener)
             ticketAttendedListener = null;
+    };
+}
+
+
+export function onTicketCancelled(listener: TicketCancelledListener): () => void {
+    ticketCancelledListener = listener;
+    return () => {
+        if (ticketCancelledListener === listener)
+            ticketCancelledListener = null;
     };
 }
 
@@ -173,6 +188,11 @@ export async function connect(config: MonitorConfiguration): Promise<void> {
 
     connection.on("TicketAttended", (event: TicketAttendedEvent) => {
         ticketAttendedListener?.(event);
+    });
+
+    connection.on("TicketCancelled", (event: TicketCancelledEvent) => {
+    
+        ticketCancelledListener?.(event);
     });
 
     // TODO: confirmar nombre exacto del evento con el backend cuando lo implemente

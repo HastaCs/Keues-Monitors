@@ -12,6 +12,7 @@ import {
     subscribeStatus,
     onTicketCalled,
     onTicketAttended,
+    onTicketCancelled,
     onCounterFree,
     onManualCall,
 } from "../../api/signalRService";
@@ -23,7 +24,7 @@ import { configureTarget } from "../../api/net";
 
 import { resolveTheme } from "../../types/theme";
 
-import type { ConnectionStatus, TicketCalledEvent, TicketAttendedEvent, CounterFreeEvent, ManualCallEvent } from "../../api/signalRService";
+import type { ConnectionStatus, TicketCalledEvent, TicketAttendedEvent, TicketCancelledEvent, CounterFreeEvent, ManualCallEvent } from "../../api/signalRService";
 import type { MonitorConfiguration } from "../../types/config";
 import type { Counter } from "../../types/models";
 
@@ -177,6 +178,13 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
             setLastTickets(prev => prev.filter(t => t.ticketId !== e.ticketId));
         });
 
+const unsubCancelled = onTicketCancelled((e: TicketCancelledEvent) => {
+            const ticketId = typeof e === "string" ? e : e?.ticketId;
+            if (!ticketId) return;
+            setCurrentTicket(prev => prev && prev.ticketId === ticketId ? null : prev);
+            setLastTickets(prev => prev.filter(t => t.ticketId !== ticketId));
+        });
+
         const unsubFree = onCounterFree((e: CounterFreeEvent) => {
             addFreeEvent(e.counterCode);
         });
@@ -240,6 +248,7 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
             unsubStatus();
             unsubTicket();
             unsubAttended();
+            unsubCancelled();
             unsubFree();
             unsubManual();
             void disconnect();
