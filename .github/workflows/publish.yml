@@ -12,7 +12,18 @@ permissions:
 
 jobs:
   publish:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - os: windows-latest
+            args: '--bundles nsis'
+
+          - os: ubuntu-22.04
+            args: '--bundles appimage'
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout repository
@@ -43,6 +54,17 @@ jobs:
           ref: ${{ env.TAG }}
           fetch-depth: 0
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -62,11 +84,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+
         with:
           tagName: ${{ env.TAG }}
           releaseName: ${{ env.TAG }}
           releaseDraft: false
           prerelease: false
+
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
-          args: ''
+
+          args: ${{ matrix.args }}
