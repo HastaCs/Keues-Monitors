@@ -78,7 +78,7 @@ export default function BoardLayout({ currentTicket, lastTickets, theme }: Layou
                                 style={{
                                     padding: "clamp(0.75rem, 1.5vw, 2rem)",
                                     display: "grid",
-                                    gridTemplateColumns: "repeat(auto-fill, minmax(clamp(10rem, 18vw, 22rem), 1fr))",
+                                    gridTemplateColumns: "repeat(auto-fill, minmax(clamp(12rem, 22vw, 26rem), 1fr))",
                                     gap: "clamp(0.5rem, 1vw, 1.5rem)",
                                     alignContent: "start",
                                 }}
