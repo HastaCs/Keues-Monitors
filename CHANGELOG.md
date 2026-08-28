@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/HastaCs/Keues-Monitors/compare/v1.3.0...v1.3.1) (2026-08-27)
+
+
+### 🐛 Bug Fixes
+
+* closes [#7](https://github.com/HastaCs/Keues-Monitors/issues/7) ([6970a76](https://github.com/HastaCs/Keues-Monitors/commit/6970a7693c4e7c69470d1ef2bd67791065d75e2f))
+
 ## [1.3.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.2.0...v1.3.0) (2026-08-26)
 
 
