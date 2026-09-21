@@ -1,10 +1,12 @@
+use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use axum::body::Bytes;
 use axum::extract::ws::{Message as AxumMessage, WebSocket, WebSocketUpgrade};
-use axum::extract::{OriginalUri, State};
+use axum::extract::{OriginalUri, Query, State};
 use axum::http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
 use axum::Router;
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::protocol::CloseFrame as TsCloseFrame;
@@ -45,7 +47,10 @@ pub async fn start(state: Arc<ProxyState>) -> Result<String, Box<dyn std::error:
 
     let _ = state.base.set(base.clone());
 
-    let app = Router::new().fallback(handler).with_state(state.clone());
+    let app = Router::new()
+        .route("/__media", get(serve_media))
+        .fallback(handler)
+        .with_state(state.clone());
 
     tauri::async_runtime::spawn(async move {
         let _ = axum::serve(listener, app).await;
@@ -77,6 +82,115 @@ async fn handler(
     }
 
     forward_http(&target, method, headers, body, path_and_query).await
+}
+
+#[derive(serde::Deserialize)]
+struct MediaQuery {
+    path: String,
+}
+
+fn mime_for_path(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("mp4") => "video/mp4",
+        Some("webm") => "video/webm",
+        Some("mov") => "video/quicktime",
+        Some("m4v") => "video/x-m4v",
+        Some("ogv") => "video/ogg",
+        _ => "application/octet-stream",
+    }
+}
+
+fn mime_content_type(mime: &'static str) -> axum::http::HeaderValue {
+    axum::http::HeaderValue::from_static(mime)
+}
+
+fn parse_bytes_range(range: &str, total: u64) -> Option<(u64, u64)> {
+    if total == 0 {
+        return None;
+    }
+    let spec = range.strip_prefix("bytes=")?;
+    let (start_s, end_s) = spec.split_once('-')?;
+
+    if start_s.is_empty() {
+        // bytes=-suffix
+        let suffix: u64 = end_s.parse().ok()?;
+        let start = total.saturating_sub(suffix);
+        return Some((start, total - 1));
+    }
+
+    let start: u64 = start_s.parse().ok()?;
+    if start >= total {
+        return None;
+    }
+    let end = end_s
+        .parse::<u64>()
+        .ok()
+        .map(|e| e.min(total - 1))
+        .unwrap_or(total - 1);
+    Some((start, end))
+}
+
+// Sirve un fichero de vídeo local por HTTP (WebKitGTK no reproduce media por
+// esquemas URI personalizados como `asset:`). Soporta peticiones Range.
+async fn serve_media(Query(q): Query<MediaQuery>, headers: HeaderMap) -> Response {
+    let path = Path::new(&q.path);
+
+    let data = match tokio::fs::read(path).await {
+        Ok(d) => d,
+        Err(_) => return (StatusCode::NOT_FOUND, "media not found").into_response(),
+    };
+
+    let total = data.len() as u64;
+    let mime = mime_for_path(path);
+
+    let mut start = 0u64;
+    let mut end = total.saturating_sub(1);
+    let mut partial = false;
+
+    if let Some(range) = headers
+        .get(axum::http::header::RANGE)
+        .and_then(|v| v.to_str().ok())
+    {
+        if let Some((s, e)) = parse_bytes_range(range, total) {
+            start = s;
+            end = e;
+            partial = true;
+        }
+    }
+
+    let slice = data[start as usize..=end as usize].to_vec();
+    let length = slice.len();
+
+    let mut headers = HeaderMap::new();
+    headers.insert(axum::http::header::CONTENT_TYPE, mime_content_type(mime));
+    headers.insert(
+        axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+        HeaderValue::from_static("*"),
+    );
+
+    if partial {
+        headers.insert(
+            axum::http::header::CONTENT_RANGE,
+            HeaderValue::from_str(&format!("bytes {start}-{end}/{total}")).unwrap(),
+        );
+        headers.insert(
+            axum::http::header::CONTENT_LENGTH,
+            HeaderValue::from_str(&length.to_string()).unwrap(),
+        );
+    }
+
+    let mut builder = Response::builder().status(if partial {
+        StatusCode::PARTIAL_CONTENT
+    } else {
+        StatusCode::OK
+    });
+    *builder.headers_mut().unwrap() = headers;
+    builder.body(axum::body::Body::from(slice)).unwrap()
 }
 
 fn cors_preflight_response(req_headers: &HeaderMap) -> Response {

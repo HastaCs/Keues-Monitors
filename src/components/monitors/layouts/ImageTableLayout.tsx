@@ -3,6 +3,7 @@ import { Box, Center, Text } from "@mantine/core";
 import type { LayoutProps } from "../../../types/layout";
 import SectionHeader from "./SectionHeader";
 import ClockDisplay from "./ClockDisplay";
+import LocalVideo from "./LocalVideo";
 import TicketTableRow from "./TicketTableRow";
 import { buildHistory, mutedText, subtleBorder } from "./shared";
 
@@ -33,26 +34,47 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
                 backgroundColor: theme.background,
             }}
         >
-            {/* Imagen — 66% */}
+            {/* Imagen / vídeo — 66% */}
             <Box
                 style={{
                     width: "66%",
                     flexShrink: 0,
-                    backgroundImage: theme.backgroundImage ? `url("${theme.backgroundImage}")` : undefined,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    position: "relative",
+                    overflow: "hidden",
+                    backgroundColor: theme.background,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                 }}
             >
-                {!theme.backgroundImage && (
+                {theme.backgroundVideo ? (
+                    <LocalVideo
+                        path={theme.backgroundVideo}
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                        }}
+                    />
+                ) : theme.backgroundImage ? (
+                    <Box
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            backgroundImage: `url("${theme.backgroundImage}")`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                        }}
+                    />
+                ) : (
                     <Text
                         fw={300}
                         c={mutedText(theme)}
                         style={{ fontSize: "clamp(1.5rem, 3vw, 4rem)" }}
                     >
-                        No image configured
+                        No image or video configured
                     </Text>
                 )}
             </Box>

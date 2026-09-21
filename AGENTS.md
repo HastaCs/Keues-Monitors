@@ -114,6 +114,7 @@ interface CalledTicket {
 - En Appearance hay **presets de paleta** (`getPresetsForFlow`) que solo tocan colores (no pisan textos, layout, voz ni `showHistory`), un botón **Preview** que abre `ThemePreviewModal` (preview WYSIWYG del panel real), y los inputs avanzados agrupados en un **Accordion** (Colors / Background / Titles & text / Layout / Border / Voice / History). Los ColorInput usan la paleta `COLOR_SWATCHES`.
 - El wordmark **KEUES** (Brand) aparece arriba en ConfigScreen y en la pantalla de carga inicial.
 - Antes de cada fetch (conectar, cambiar ubicación/flujo, precarga) se llama `configureTarget(server)` para apuntar el proxy local.
+- **Imagen/vídeo de fondo**: `theme.backgroundImage` (data URL, subida con FileInput) y `theme.backgroundVideo` (**ruta local** elegida con el plugin `dialog`; NO se guarda en base64). El vídeo **no** se reproduce por `asset:` (WebKitGTK no soporta media en esquemas URI personalizados): se sirve por HTTP a través del proxy local de Rust (`GET /__media?path=...`, con soporte Range) y la URL se resuelve con `videoSrc()` (`src/api/media.ts`); el componente `LocalVideo` renderiza el `<video>` (mudo, en bucle) en el layout **Image + Table**.
 
 ## Dominio y contrato API
 

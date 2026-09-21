@@ -32,6 +32,8 @@ import { ttsListVoices, ttsSpeak } from "../../api/ttsService";
 import { playBeep } from "../../api/soundService";
 import { isTauri, saveConfiguration } from "../../api/appBridge";
 import { configureTarget } from "../../api/net";
+import { open } from "@tauri-apps/plugin-dialog";
+import LocalVideo from "../monitors/layouts/LocalVideo";
 
 import type { Location, Flow } from "../../types/models";
 import type { MonitorConfiguration } from "../../types/config";
@@ -101,6 +103,19 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
             updateTheme({ backgroundImage: reader.result as string });
         };
         reader.readAsDataURL(file);
+    }
+
+
+    function handleVideoFile() {
+        if (!isTauri()) return;
+
+        void open({
+            multiple: false,
+            filters: [{ name: "Video", extensions: ["mp4", "webm", "mov", "m4v", "ogv"] }],
+        }).then(selected => {
+            if (typeof selected === "string")
+                updateTheme({ backgroundVideo: selected });
+        });
     }
 
 
@@ -490,6 +505,45 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                                     border: "1px solid #e5e7eb",
                                                 }}
                                             />
+                                        )}
+
+                                        <Group grow align="flex-end">
+                                            <Button
+                                                variant="default"
+                                                leftSection={<IconPhoto size={16} />}
+                                                onClick={handleVideoFile}
+                                            >
+                                                Select background video
+                                            </Button>
+                                            {resolvedTheme.backgroundVideo && (
+                                                <Button
+                                                    variant="light"
+                                                    color="red"
+                                                    leftSection={<IconPhotoOff size={16} />}
+                                                    mb={1}
+                                                    onClick={() => updateTheme({ backgroundVideo: undefined })}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            )}
+                                        </Group>
+
+                                        {resolvedTheme.backgroundVideo && (
+                                            <>
+                                                <Text size="xs" c="dimmed" style={{ overflowWrap: "anywhere" }}>
+                                                    {resolvedTheme.backgroundVideo}
+                                                </Text>
+                                                <LocalVideo
+                                                    path={resolvedTheme.backgroundVideo}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: 120,
+                                                        objectFit: "cover",
+                                                        borderRadius: 8,
+                                                        border: "1px solid #e5e7eb",
+                                                    }}
+                                                />
+                                            </>
                                         )}
                                     </Stack>
                                 </Accordion.Panel>

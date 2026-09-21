@@ -5,6 +5,7 @@ export interface MonitorTheme {
     layout?: MonitorLayoutId;
     background: string;
     backgroundImage?: string;
+    backgroundVideo?: string;
     cardBackground: string;
     historyCardBackground: string;
     historyPanelBackground: string;

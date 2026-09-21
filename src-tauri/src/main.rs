@@ -524,6 +524,7 @@ fn tts_clear_cache(
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             if let Err(e) = load_or_init_config(app.handle()) {
