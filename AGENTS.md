@@ -86,7 +86,7 @@ src/
       TicketMonitorPanel.tsx     # flowType 0
       SetFreeMonitorPanel.tsx    # flowType 1
       ManualCallMonitorPanel.tsx # flowType 2
-      layouts/                   # SpotlightLayout, BoardLayout, elementos compartidos
+      layouts/                   # SpotlightLayout, BoardLayout, TableLayout, ImageTableLayout, TicketTableRow, elementos compartidos
 ```
 
 ### Tipo `CalledTicket` (definido y exportado en MonitorPanel.tsx)
@@ -193,7 +193,7 @@ Paleta por defecto:
 
 ### Paneles
 
-- **TicketMonitorPanel (0)**: fila con el turno actual a la izquierda (`flex: 1`, card centrada con borde `borderColor`) e histórico a la derecha (ancho `clamp(280px, 32vw, 45rem)`). Histórico de hasta 10 entradas, deduplicado por `ticketCode` y con opacidad decreciente por antigüedad. Números protagonistas `fw=900`.
+- **TicketMonitorPanel (0)**: turno actual + histórico con cuatro layouts elegibles en ConfigScreen → Appearance → Layout: **Spotlight** (turno a la izquierda, histórico en columna a la derecha `clamp(280px, 32vw, 45rem)`, opacidad decreciente por antigüedad), **Board** (turno arriba, rejilla de histórico abajo `minmax(clamp(12rem, 22vw, 26rem), 1fr)`), **Table** (tabla vertical: fila del turno actual arriba, más alta y destacada con `theme.textColor`, y hasta 8 filas de histórico debajo; orden Turno | Puesto, separadores finos) e **Image + Table** (imagen `theme.backgroundImage` en el 66% izquierdo + tabla estrecha en el 33% derecho con el turno actual y hasta 5 de histórico). Histórico de hasta 10 entradas, deduplicado por `ticketCode`. Números protagonistas `fw=900`.
 - **SetFreeMonitorPanel (1)**: puesto libre en grande (nombre + subtexto `labelFooter`); el tamaño de fuente se calcula dinámicamente para que el código quepa en una línea. Histórico de puestos libres a la derecha.
 - **ManualCallMonitorPanel (2)**: muestra `counterCode-code` en grande (p. ej. `P-78`) + histórico de otras colas (1 entrada por `counterCode` distinto).
 

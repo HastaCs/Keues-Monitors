@@ -46,14 +46,18 @@ function buildSample(flowType: number): SampleData {
 
     const currentTicket: CalledTicket = {
         ticketId: "preview-current",
-        ticketCode: "A-042",
+        ticketCode: "A042",
         counterCode: "3",
         calledAt: now,
     };
     const lastTickets: CalledTicket[] = [
-        { ticketId: "preview-1", ticketCode: "A-041", counterCode: "2", calledAt: now - 60_000 },
-        { ticketId: "preview-2", ticketCode: "A-040", counterCode: "1", calledAt: now - 120_000 },
-        { ticketId: "preview-3", ticketCode: "A-039", counterCode: "5", calledAt: now - 180_000 },
+        { ticketId: "preview-1", ticketCode: "A041", counterCode: "2", calledAt: now - 60_000 },
+        { ticketId: "preview-2", ticketCode: "A040", counterCode: "1", calledAt: now - 120_000 },
+        { ticketId: "preview-3", ticketCode: "A039", counterCode: "5", calledAt: now - 180_000 },
+        { ticketId: "preview-4", ticketCode: "A038", counterCode: "4", calledAt: now - 240_000 },
+        { ticketId: "preview-5", ticketCode: "A037", counterCode: "2", calledAt: now - 300_000 },
+        { ticketId: "preview-6", ticketCode: "A036", counterCode: "1", calledAt: now - 360_000 },
+        { ticketId: "preview-7", ticketCode: "A035", counterCode: "3", calledAt: now - 420_000 },
     ];
     return { currentTicket, lastTickets };
 }

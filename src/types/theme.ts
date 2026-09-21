@@ -1,4 +1,4 @@
-export type MonitorLayoutId = "spotlight" | "board";
+export type MonitorLayoutId = "spotlight" | "board" | "table" | "image";
 
 
 export interface MonitorTheme {
