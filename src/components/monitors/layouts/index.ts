@@ -2,6 +2,7 @@ import SpotlightLayout from "./SpotlightLayout";
 import BoardLayout from "./BoardLayout";
 import TableLayout from "./TableLayout";
 import ImageTableLayout from "./ImageTableLayout";
+import CountersLayout from "./CountersLayout";
 
 import type { MonitorLayoutDefinition } from "../../../types/layout";
 
@@ -12,6 +13,7 @@ export const LAYOUTS_BY_FLOW: Record<number, MonitorLayoutDefinition[]> = {
         { id: "board", label: "Board", component: BoardLayout },
         { id: "table", label: "Table", component: TableLayout },
         { id: "image", label: "Image + Table", component: ImageTableLayout },
+        { id: "counters", label: "By Counter", component: CountersLayout },
     ],
 };
 

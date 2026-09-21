@@ -6,6 +6,7 @@ import ManualCallMonitorPanel from "../monitors/ManualCallMonitorPanel";
 
 import type { MonitorTheme } from "../../types/theme";
 import type { CalledTicket } from "../monitors/MonitorPanel";
+import type { Counter } from "../../types/models";
 
 
 interface Props {
@@ -30,6 +31,7 @@ interface SampleData {
     counterCode?: string;
     currentTicket?: CalledTicket;
     lastTickets?: CalledTicket[];
+    counters?: Counter[];
 }
 
 
@@ -59,7 +61,15 @@ function buildSample(flowType: number): SampleData {
         { ticketId: "preview-6", ticketCode: "A036", counterCode: "1", calledAt: now - 360_000 },
         { ticketId: "preview-7", ticketCode: "A035", counterCode: "3", calledAt: now - 420_000 },
     ];
-    return { currentTicket, lastTickets };
+    const counters: Counter[] = Array.from({ length: 6 }, (_, i) => ({
+        id: `preview-counter-${i + 1}`,
+        code: String(i + 1),
+        name: `Counter ${i + 1}`,
+        description: "",
+        color: "",
+        queues: [],
+    }));
+    return { currentTicket, lastTickets, counters };
 }
 
 
@@ -92,6 +102,7 @@ export default function ThemePreviewModal({ opened, onClose, flowType, theme }: 
                         currentTicket={sample.currentTicket ?? null}
                         lastTickets={sample.lastTickets ?? []}
                         theme={theme}
+                        counters={sample.counters}
                     />
                 );
         }

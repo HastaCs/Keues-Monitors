@@ -54,6 +54,9 @@ export default function MonitorPanel({ config, onOpenConfig }: Props) {
     // Mapa counterCode -> counter, usado para resolver el nombre de la caja en anuncios de voz
     const countersByCodeRef = useRef<Map<string, Counter>>(new Map());
 
+    // Lista de counters (ya descargada en loadInitialData), expuesta a los layouts
+    const [counters, setCounters] = useState<Counter[]>([]);
+
     // Estado para TicketMachine (flowType 0)
     const [currentTicket, setCurrentTicket] = useState<CalledTicket | null>(null);
     const [lastTickets, setLastTickets] = useState<CalledTicket[]>([]);
@@ -214,6 +217,7 @@ const unsubCancelled = onTicketCancelled((e: TicketCancelledEvent) => {
                 if (cancelled) return;
 
                 countersByCodeRef.current = new Map(counters.map(c => [c.code, c]));
+                setCounters(counters);
 
                 if (flowType !== 0) return;
 
@@ -279,7 +283,7 @@ const unsubCancelled = onTicketCancelled((e: TicketCancelledEvent) => {
             case 2:
                 return <ManualCallMonitorPanel code={manualCode} counterCode={manualCounterCode} theme={theme} />;
             default:
-                return <TicketMonitorPanel currentTicket={currentTicket} lastTickets={lastTickets} theme={theme} />;
+                return <TicketMonitorPanel currentTicket={currentTicket} lastTickets={lastTickets} theme={theme} counters={counters} />;
         }
     }
 
