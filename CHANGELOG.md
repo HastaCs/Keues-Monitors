@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/HastaCs/Keues-Monitors/compare/v1.3.1...v1.4.0) (2026-09-22)
+
+
+### 🚀 Features
+
+* add background video support ([05fd452](https://github.com/HastaCs/Keues-Monitors/commit/05fd45258a8d7497aa20cc55805a7c31250db036))
+* add counters layout ([e96c317](https://github.com/HastaCs/Keues-Monitors/commit/e96c317e26272ee0aa012b52cc7db557a424254b))
+* add new layouts ([445c106](https://github.com/HastaCs/Keues-Monitors/commit/445c106af9b67c7da67a69b7723c0c7f3a846b7b))
+
 ## [1.3.1](https://github.com/HastaCs/Keues-Monitors/compare/v1.3.0...v1.3.1) (2026-08-27)
 
 
