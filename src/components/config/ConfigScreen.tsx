@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import {
     Accordion,
@@ -7,11 +7,9 @@ import {
     Button,
     Checkbox,
     ColorInput,
-    FileInput,
     Group,
     NavLink,
     NumberInput,
-    Modal,
     Select,
     Stack,
     Tabs,
@@ -25,6 +23,7 @@ import Brand from "../Brand";
 import VersionBadge from "../VersionBadge";
 import UpdatePanel from "./UpdatePanel";
 import PresetPicker from "./PresetPicker";
+import LayoutPicker from "./LayoutPicker";
 import ThemePreviewModal from "./ThemePreviewModal";
 import { COLOR_SWATCHES, getPresetsForFlow } from "./themePresets";
 import { getLocations, getFlows } from "../../api/keuesApi";
@@ -69,7 +68,6 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
     const [ttsVoices, setTtsVoices] = useState<TTSVoice[]>([]);
 
     const [activeTab, setActiveTab] = useState<"config" | "apariencia" | "updates">("config");
-    const [layoutModalOpen, setLayoutModalOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
 
     const isNarrow = useMediaQuery("(max-width: 700px)");
@@ -93,6 +91,9 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
         const prefix = resolvedTheme.voicePrefix?.trim();
         await ttsSpeak(prefix ? `${prefix} 12` : "12", voiceValue);
     }
+
+
+    const imageInputRef = useRef<HTMLInputElement | null>(null);
 
 
     function handleImageFile(file: File | null) {
@@ -380,7 +381,6 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
     const layouts = LAYOUTS_BY_FLOW[themeFlowType] ?? [];
     const hasLayouts = layouts.length > 1;
     const currentLayoutId = resolvedTheme.layout ?? layouts[0]?.id;
-    const currentLayoutLabel = layouts.find(l => l.id === currentLayoutId)?.label ?? layouts[0]?.label;
 
     const appearancePanel = (
         <Stack gap="sm">
@@ -473,41 +473,36 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                                 value={resolvedTheme.background}
                                                 onChange={v => updateTheme({ background: v })}
                                             />
-                                            <FileInput
-                                                style={{ flex: 1 }}
-                                                label="Background image"
-                                                description="Upload a local image"
-                                                placeholder="Select image"
+                                        </Group>
+
+                                        <Group grow gap="sm">
+                                            <input
+                                                ref={imageInputRef}
+                                                type="file"
                                                 accept="image/*"
-                                                onChange={handleImageFile}
+                                                hidden
+                                                onChange={e => {
+                                                    handleImageFile(e.target.files?.[0] ?? null);
+                                                    e.target.value = "";
+                                                }}
                                             />
+                                            <Button
+                                                variant="default"
+                                                leftSection={<IconPhoto size={16} />}
+                                                onClick={() => imageInputRef.current?.click()}
+                                            >
+                                                Select background image
+                                            </Button>
                                             {resolvedTheme.backgroundImage && (
                                                 <Button
                                                     variant="light"
                                                     color="red"
                                                     leftSection={<IconPhotoOff size={16} />}
-                                                    mb={1}
                                                     onClick={() => updateTheme({ backgroundImage: undefined })}
                                                 >
                                                     Remove
                                                 </Button>
                                             )}
-                                        </Group>
-
-                                        {resolvedTheme.backgroundImage && (
-                                            <Box
-                                                style={{
-                                                    height: 120,
-                                                    borderRadius: 8,
-                                                    backgroundImage: `url(${resolvedTheme.backgroundImage})`,
-                                                    backgroundSize: "cover",
-                                                    backgroundPosition: "center",
-                                                    border: "1px solid #e5e7eb",
-                                                }}
-                                            />
-                                        )}
-
-                                        <Group grow align="flex-end">
                                             <Button
                                                 variant="default"
                                                 leftSection={<IconPhoto size={16} />}
@@ -520,7 +515,6 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                                     variant="light"
                                                     color="red"
                                                     leftSection={<IconPhotoOff size={16} />}
-                                                    mb={1}
                                                     onClick={() => updateTheme({ backgroundVideo: undefined })}
                                                 >
                                                     Remove
@@ -614,14 +608,12 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                                         Layout
                                     </Accordion.Control>
                                     <Accordion.Panel>
-                                        <Button
-                                            variant="default"
-                                            fullWidth
-                                            leftSection={<IconLayout size={16} />}
-                                            onClick={() => setLayoutModalOpen(true)}
-                                        >
-                                            {currentLayoutLabel}
-                                        </Button>
+                                        <LayoutPicker
+                                            layouts={layouts}
+                                            currentId={currentLayoutId}
+                                            theme={resolvedTheme}
+                                            onSelect={id => updateTheme({ layout: id })}
+                                        />
                                     </Accordion.Panel>
                                 </Accordion.Item>
                             )}
@@ -827,37 +819,6 @@ export default function ConfigScreen({ initialConfig, onSaved, onCancel }: Props
                     Save
                 </Button>
             </Group>
-
-            {hasLayouts && (
-                <Modal
-                    opened={layoutModalOpen}
-                    onClose={() => setLayoutModalOpen(false)}
-                    title="Choose layout"
-                    centered
-                >
-                    <Stack gap="xs">
-                        {layouts.map(layout => {
-                            const selected = layout.id === currentLayoutId;
-                            return (
-                                <Button
-                                    key={layout.id}
-                                    fullWidth
-                                    variant={selected ? "filled" : "default"}
-                                    color="blue"
-                                    justify="space-between"
-                                    rightSection={selected ? <IconCheck size={18} /> : undefined}
-                                    onClick={() => {
-                                        updateTheme({ layout: layout.id });
-                                        setLayoutModalOpen(false);
-                                    }}
-                                >
-                                    {layout.label}
-                                </Button>
-                            );
-                        })}
-                    </Stack>
-                </Modal>
-            )}
 
             <ThemePreviewModal
                 opened={previewOpen}

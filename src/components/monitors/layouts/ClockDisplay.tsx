@@ -6,10 +6,11 @@ import type { MonitorTheme } from "../../../types/theme";
 
 interface Props {
     theme: MonitorTheme;
+    align?: "flex-start" | "center" | "flex-end";
 }
 
 
-export default function ClockDisplay({ theme }: Props) {
+export default function ClockDisplay({ theme, align = "flex-end" }: Props) {
 
     const [now, setNow] = useState(() => new Date());
 
@@ -24,11 +25,11 @@ export default function ClockDisplay({ theme }: Props) {
     const minutes = now.getMinutes().toString().padStart(2, "0");
     const dateStr = now.toLocaleDateString(undefined, { day: "numeric", month: "numeric", year: "numeric" });
     const timeColor = theme.clockTextColor ?? theme.textColor;
-    const dateColor = theme.clockTextColor ?? theme.secondaryTextColor;
+    const dateColor = timeColor;
 
 
     return (
-        <Stack align="flex-end" gap={0}>
+        <Stack align={align} gap={0}>
             <Text
                 fw={800}
                 c={timeColor}

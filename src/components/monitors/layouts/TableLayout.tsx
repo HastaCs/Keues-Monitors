@@ -9,13 +9,19 @@ import { buildHistory, mutedText, panelBackgroundStyle, subtleBorder } from "./s
 
 export default function TableLayout({ currentTicket, lastTickets, theme }: LayoutProps) {
 
-    const history = buildHistory(currentTicket, lastTickets).slice(0, 8);
+    const history = buildHistory(currentTicket, lastTickets).slice(0, 7);
     const rows = currentTicket ? [currentTicket, ...history] : history;
     const border = subtleBorder(theme);
 
     const clockCorner = theme.showClock && (
-        <Box pos="absolute" top={16} right={16} style={{ zIndex: 50 }}>
-            <ClockDisplay theme={theme} />
+        <Box
+            pos="absolute"
+            bottom={16}
+            left={0}
+            right={0}
+            style={{ zIndex: 50, display: "flex", justifyContent: "center" }}
+        >
+            <ClockDisplay theme={theme} align="center" />
         </Box>
     );
 
@@ -49,6 +55,7 @@ export default function TableLayout({ currentTicket, lastTickets, theme }: Layou
                         minHeight: 0,
                         display: "flex",
                         flexDirection: "column",
+                        justifyContent: "flex-start",
                         overflow: "hidden",
                         borderTop: `2px solid ${border}`,
                     }}
@@ -59,8 +66,10 @@ export default function TableLayout({ currentTicket, lastTickets, theme }: Layou
                             <Box
                                 key={`${t.ticketCode}-${t.calledAt}`}
                                 style={{
-                                    flex: isCurrent ? 1.4 : 1,
-                                    minHeight: 0,
+                                    flexShrink: 0,
+                                    height: isCurrent
+                                        ? "clamp(5.5rem, 15vh, 12.5rem)"
+                                        : "clamp(4rem, 11vh, 9.5rem)",
                                     display: "flex",
                                     alignItems: "stretch",
                                 }}
@@ -70,6 +79,7 @@ export default function TableLayout({ currentTicket, lastTickets, theme }: Layou
                                     theme={theme}
                                     emphasized={isCurrent}
                                     showSeparator={i < rows.length - 1}
+                                    uniform
                                 />
                             </Box>
                         );

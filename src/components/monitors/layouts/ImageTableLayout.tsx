@@ -17,8 +17,8 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
     const border = subtleBorder(theme);
 
     const clockCorner = theme.showClock && (
-        <Box pos="absolute" top={16} right={16} style={{ zIndex: 50 }}>
-            <ClockDisplay theme={theme} />
+        <Box pos="absolute" bottom={16} left={16} style={{ zIndex: 50 }}>
+            <ClockDisplay theme={theme} align="flex-start" />
         </Box>
     );
 
@@ -59,13 +59,16 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
                         }}
                     />
                 ) : theme.backgroundImage ? (
-                    <Box
+                    <img
+                        src={theme.backgroundImage}
+                        alt=""
+                        draggable={false}
                         style={{
                             position: "absolute",
                             inset: 0,
-                            backgroundImage: `url("${theme.backgroundImage}")`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
                         }}
                     />
                 ) : (
@@ -107,6 +110,7 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
                             minHeight: 0,
                             display: "flex",
                             flexDirection: "column",
+                            justifyContent: "flex-start",
                             overflow: "hidden",
                             borderTop: `2px solid ${border}`,
                         }}
@@ -117,8 +121,10 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
                                 <Box
                                     key={`${t.ticketCode}-${t.calledAt}`}
                                     style={{
-                                        flex: isCurrent ? 1.4 : 1,
-                                        minHeight: 0,
+                                        flexShrink: 0,
+                                        height: isCurrent
+                                            ? "clamp(5.5rem, 15vh, 12rem)"
+                                            : "clamp(4rem, 11vh, 9rem)",
                                         display: "flex",
                                         alignItems: "stretch",
                                     }}
@@ -128,6 +134,7 @@ export default function ImageTableLayout({ currentTicket, lastTickets, theme }: 
                                         theme={theme}
                                         emphasized={isCurrent}
                                         showSeparator={i < rows.length - 1}
+                                        compact
                                     />
                                 </Box>
                             );

@@ -11,13 +11,15 @@ interface Props {
     theme: MonitorTheme;
     emphasized?: boolean;
     showSeparator?: boolean;
+    compact?: boolean;
+    uniform?: boolean;
 }
 
 
 const CHAR_FACTOR = 0.62;
 
 
-export default function TicketTableRow({ ticket, theme, emphasized = false, showSeparator = true }: Props) {
+export default function TicketTableRow({ ticket, theme, emphasized = false, showSeparator = true, compact = false, uniform = false }: Props) {
 
     const rowRef = useRef<HTMLDivElement | null>(null);
     const [size, setSize] = useState({ w: 0, h: 0 });
@@ -37,23 +39,33 @@ export default function TicketTableRow({ ticket, theme, emphasized = false, show
     }, []);
 
 
+    const compactScale = compact ? 0.79 : 1;
+
+    // En el layout compacto (Image + Table) o uniforme (Table) el histórico comparte
+    // el tamaño del turno actual; el resaltado (color/fondo) sigue marcado por `emphasized`.
+    const big = compact || uniform || emphasized;
+
     const maxTicketPx = Math.min(
-        window.innerWidth * (emphasized ? 0.18 : 0.10),
-        window.innerHeight * (emphasized ? 0.34 : 0.22),
+        window.innerWidth * (big ? 0.18 : 0.10),
+        window.innerHeight * (big ? 0.34 : 0.22),
     );
 
     const ticketChars = Math.max(ticket.ticketCode.length, 1);
     const counterChars = Math.max((ticket.counterCode ?? "").length, 1);
 
-    const counterPx = emphasized
-        ? Math.max(12, Math.min(size.h * 0.40, window.innerWidth * 0.06))
-        : Math.max(10, Math.min(size.h * 0.38, window.innerWidth * 0.05));
+    const counterPx = (big
+        ? Math.max(12, Math.min(size.h * 0.38, window.innerWidth * 0.055))
+        : Math.max(10, Math.min(size.h * 0.36, window.innerWidth * 0.045))) * compactScale;
 
-    const counterEst = ticket.counterCode ? counterChars * counterPx * CHAR_FACTOR : 0;
-    const remaining = Math.max(size.w * 0.94 - counterEst, size.w * 0.40);
+    // Si el nombre del puesto no cabe en una línea, se parte en dos.
+    const counterBudget = size.w * (compact ? 0.46 : 0.48);
+    const counterSingleLine = ticket.counterCode ? counterChars * counterPx * CHAR_FACTOR : 0;
+    const wrapCounter = Boolean(ticket.counterCode) && counterSingleLine > counterBudget;
+    const counterEst = ticket.counterCode ? Math.min(counterSingleLine, counterBudget) : 0;
+    const remaining = Math.max(size.w * 0.94 - counterEst, size.w * 0.35);
 
-    const byHeight = size.h * (emphasized ? 0.70 : 0.68);
-    const byWidth = (remaining * 0.96) / (ticketChars * CHAR_FACTOR);
+    const byHeight = size.h * (big ? 0.70 : 0.68) * compactScale;
+    const byWidth = ((remaining * 0.96) / (ticketChars * CHAR_FACTOR)) * compactScale;
     const ticketPx = Math.max(16, Math.min(maxTicketPx, byHeight, byWidth));
 
 
@@ -103,9 +115,12 @@ export default function TicketTableRow({ ticket, theme, emphasized = false, show
                     tt="uppercase"
                     style={{
                         fontSize: `${counterPx}px`,
-                        lineHeight: 1,
+                        lineHeight: wrapCounter ? 1.05 : 1,
                         letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
+                        whiteSpace: wrapCounter ? "normal" : "nowrap",
+                        overflowWrap: wrapCounter ? "break-word" : undefined,
+                        textAlign: "right",
+                        maxWidth: wrapCounter ? `${counterBudget}px` : undefined,
                         minWidth: 0,
                     }}
                 >

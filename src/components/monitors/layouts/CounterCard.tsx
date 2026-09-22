@@ -41,11 +41,16 @@ export default function CounterCard({ counter, ticketCode, isActive, theme }: Pr
 
     const maxPx = Math.min(window.innerWidth * 0.10, window.innerHeight * 0.22);
 
-    const byHeight = size.h * (isActive ? 0.50 : 0.46);
+    // Nombre del puesto: si no cabe en una línea, se parte en dos respetando palabras.
+    const labelPxBase = Math.max(16, Math.min(size.h * 0.24, window.innerWidth * 0.045));
+    const wrapLabel = counter.code.length * labelPxBase * CHAR_FACTOR > size.w * 0.92;
+    const labelPx = wrapLabel
+        ? Math.max(12, Math.min(size.h * 0.16, window.innerWidth * 0.032))
+        : labelPxBase;
+
+    const byHeight = size.h * (wrapLabel ? 0.36 : isActive ? 0.50 : 0.46);
     const byWidth = (size.w * 0.88) / (chars * CHAR_FACTOR);
     const ticketPx = code ? Math.max(18, Math.min(maxPx, byHeight, byWidth)) : 0;
-
-    const labelPx = Math.max(16, Math.min(size.h * 0.24, window.innerWidth * 0.045));
 
 
     return (
@@ -78,9 +83,12 @@ export default function CounterCard({ counter, ticketCode, isActive, theme }: Pr
                 c={isActive ? theme.secondaryTextColor : theme.historySecondaryTextColor}
                 style={{
                     fontSize: `${labelPx}px`,
-                    lineHeight: 1,
+                    lineHeight: wrapLabel ? 1.05 : 1,
                     letterSpacing: "0.08em",
-                    whiteSpace: "nowrap",
+                    whiteSpace: wrapLabel ? "normal" : "nowrap",
+                    overflowWrap: wrapLabel ? "break-word" : undefined,
+                    textAlign: "center",
+                    maxWidth: wrapLabel ? "92%" : undefined,
                     minWidth: 0,
                 }}
             >
